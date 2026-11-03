@@ -61,9 +61,36 @@ Dates use the America/Chicago calendar, which is Terminal 331's clock.
 
 ## Deploy
 
-The cheap path is one Node process and a persistent disk for `DATA_DIR`. Do not put the database on an ephemeral container filesystem or you will lose certificates on the next restart.
+SQLite and the uploaded certificates have to live on a disk that survives restarts. A free web dyno with an ephemeral filesystem will wipe the yard on the next deploy.
 
-### Docker
+Prices below are the hosts' published rates as of 3 November 2026, for one always-on app and 1 GB of disk. Egress is extra and small for this app.
+
+| Host | What you pay | Why it is or isn't the pick |
+| --- | --- | --- |
+| **Fly.io** | **About $3.84/month** in Ashburn: shared-cpu-1x with 512 MB RAM at $3.69 per 30 days, plus a 1 GB volume at $0.15. Shared IPv4 and the TLS cert are included. | Cheapest option that stays up and keeps a real disk. `fly.toml` is set up for this. |
+| Railway Hobby | $5/month minimum. An always-on service is metered at $10/GB RAM and $20/vCPU, so 512 MB plus a fraction of a CPU usually lands around $7–10 after the included $5 credit. Volumes are $0.15/GB. | Easy GitHub connect, but the always-on bill is higher than Fly. |
+| Render | $7/month for the smallest always-on web instance (0.5 CPU, 512 MB) plus $0.25/GB for a persistent disk, about $7.25 for 1 GB. The free instance cannot attach a disk and it sleeps. | Fine, and the most expensive of the three for this app. |
+
+### Fly.io
+
+`fly.toml` runs one Machine in `iad`, mounts a volume named `certs_data` at `/data`, and does not stop when the yard is idle. Secrets stay out of git.
+
+```bash
+# from a checkout of this repo, with the flyctl CLI installed
+fly auth login
+fly apps create rigging-cert-tracker
+fly volumes create certs_data --size 1 --region iad -a rigging-cert-tracker -y
+fly secrets set APP_PASSWORD="$(openssl rand -base64 24)" AUTH_SECRET="$(openssl rand -base64 48)" -a rigging-cert-tracker
+fly deploy
+```
+
+The live URL is `https://rigging-cert-tracker.fly.dev`. The first boot imports `seed/rigging_certs.xlsx` onto the volume. Sign in as `terminal` with the `APP_PASSWORD` you set.
+
+If a deploy dies with an out-of-memory error, change `memory` in `fly.toml` from `512mb` to `1gb` and deploy again. That Machine is $6.70 per 30 days instead of $3.69. A measured production process sat near 130 MB before the first request, so 512 MB is the size in the config.
+
+To put the Machine closer to Jourdanton, change `primary_region` to `dfw` and create the volume in `dfw` as well. Dallas can cost more than Ashburn.
+
+### Docker on your own machine
 
 ```bash
 cp .env.example .env
@@ -71,7 +98,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-The compose file publishes port **43123** and stores the database and uploads in a named volume. The image runs `ensure-seed` on boot, so the first start loads `seed/rigging_certs.xlsx` if the volume is empty.
+The compose file publishes port **43123** and stores the database and uploads in a named volume. The server imports `seed/rigging_certs.xlsx` on boot when the database is empty.
 
 The container listens on port 3000 internally. `DATA_DIR` inside the container is `/data`.
 
@@ -82,10 +109,10 @@ npm ci
 npm run build
 cp .env.example .env
 # set APP_PASSWORD, AUTH_SECRET, and DATA_DIR=/var/lib/331-certs
-NODE_ENV=production npm start
+NODE_ENV=production DATA_DIR=/var/lib/331-certs npm start
 ```
 
-Put Caddy or nginx in front for HTTPS. The service worker and the install prompt need HTTPS (localhost is the exception). Point the proxy at `127.0.0.1:43123` and keep `DATA_DIR` on the same disk across deploys.
+`npm start` serves the standalone build. Put Caddy or nginx in front for HTTPS. The service worker and the install prompt need HTTPS (localhost is the exception). Point the proxy at `127.0.0.1:43123` and keep `DATA_DIR` on the same disk across deploys.
 
 ### Phone install
 

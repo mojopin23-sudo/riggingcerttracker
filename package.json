@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx scripts/ensure-seed.ts && next dev -H 0.0.0.0 -p 43123",
     "build": "next build",
-    "start": "tsx scripts/ensure-seed.ts && next start -H 0.0.0.0 -p 43123",
+    "start": "node scripts/start-standalone.mjs",
     "lint": "eslint",
     "import": "tsx scripts/import-certs.ts",
     "test": "tsx --test scripts/dates.test.ts scripts/import.test.ts"

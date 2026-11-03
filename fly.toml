@@ -1,0 +1,42 @@
+# Cheapest reliable shape for this app: one always-on shared CPU in Ashburn
+# (Fly's lowest-priced region) plus a 1 GB volume for SQLite and uploads.
+# Quoted from https://fly.io/pricing on 3 Nov 2026:
+#   shared-cpu-1x with 512 MB RAM, always on: $3.69 / 30 days
+#   volume: $0.15 / GB / month
+#   shared IPv4 and the first TLS cert: $0
+# About $3.84/month before a few cents of egress ($0.02/GB in North America).
+
+app = "rigging-cert-tracker"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  DATA_DIR = "/data"
+  PORT = "3000"
+  APP_USER = "terminal"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = false
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "40s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/login"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[mounts]
+  source = "certs_data"
+  destination = "/data"
+  initial_size = "1gb"
