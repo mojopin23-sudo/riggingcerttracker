@@ -1,42 +1,39 @@
-# One always-on shared CPU in Dallas (closest Fly region to Jourdanton)
-# plus a 1 GB volume for SQLite and uploads.
-# Ashburn list price on https://fly.io/pricing as of 3 Nov 2026, for comparison:
-#   shared-cpu-1x with 512 MB RAM, always on: $3.69 / 30 days
-#   volume: $0.15 / GB / month
-#   shared IPv4 and the first TLS cert: $0
-# Dallas (dfw) can bill a bit more than that Ashburn rate.
+# fly.toml app configuration file generated for riggingcerttracker on 2026-11-03T17:46:11Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "riggingcerttracker"
-primary_region = "dfw"
+app = 'riggingcerttracker'
+primary_region = 'dfw'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  DATA_DIR = "/data"
-  PORT = "3000"
-  APP_USER = "terminal"
-  NODE_ENV = "production"
+  APP_USER = 'terminal'
+  DATA_DIR = '/data'
+  NODE_ENV = 'production'
+  PORT = '3000'
+
+[[mounts]]
+  source = 'certs_data'
+  destination = '/data'
+  initial_size = '1gb'
 
 [http_service]
   internal_port = 3000
   force_https = true
-  auto_stop_machines = "off"
+  auto_stop_machines = 'off'
   auto_start_machines = false
   min_machines_running = 1
 
   [[http_service.checks]]
-    grace_period = "40s"
-    interval = "30s"
-    method = "GET"
-    timeout = "5s"
-    path = "/login"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '40s'
+    method = 'GET'
+    path = '/login'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
-
-[mounts]
-  source = "certs_data"
-  destination = "/data"
-  initial_size = "1gb"
+  size = 'shared-cpu-1x'
+  memory = '512mb'
