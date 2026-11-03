@@ -1,0 +1,15 @@
+services:
+  certs:
+    build: .
+    ports:
+      - "43123:3000"
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - certs-data:/data
+    restart: unless-stopped
+
+volumes:
+  certs-data:
