@@ -73,22 +73,22 @@ Prices below are the hosts' published rates as of 3 November 2026, for one alway
 
 ### Fly.io
 
-`fly.toml` runs one Machine in `iad`, mounts a volume named `certs_data` at `/data`, and does not stop when the yard is idle. Secrets stay out of git.
+`fly.toml` runs one Machine in `dfw`, mounts a volume named `certs_data` at `/data`, and does not stop when the yard is idle. Secrets stay out of git. The app name is `riggingcerttracker`.
 
 ```bash
 # from a checkout of this repo, with the flyctl CLI installed
 fly auth login
-fly apps create rigging-cert-tracker
-fly volumes create certs_data --size 1 --region iad -a rigging-cert-tracker -y
-fly secrets set APP_PASSWORD="$(openssl rand -base64 24)" AUTH_SECRET="$(openssl rand -base64 48)" -a rigging-cert-tracker
+fly apps create riggingcerttracker
+fly volumes create certs_data --size 1 --region dfw -a riggingcerttracker -y
+fly secrets set APP_PASSWORD="$(openssl rand -base64 24)" AUTH_SECRET="$(openssl rand -base64 48)" -a riggingcerttracker
 fly deploy
 ```
 
-The live URL is `https://rigging-cert-tracker.fly.dev`. The first boot imports `seed/rigging_certs.xlsx` onto the volume. Sign in as `terminal` with the `APP_PASSWORD` you set.
+Pushing `main` also deploys, once the GitHub repo secret `FLY_API_TOKEN` is set. The workflow is `.github/workflows/fly-deploy.yml`.
 
-If a deploy dies with an out-of-memory error, change `memory` in `fly.toml` from `512mb` to `1gb` and deploy again. That Machine is $6.70 per 30 days instead of $3.69. A measured production process sat near 130 MB before the first request, so 512 MB is the size in the config.
+The live URL is `https://riggingcerttracker.fly.dev`. The first boot imports `seed/rigging_certs.xlsx` onto the volume. Sign in as `terminal` with the `APP_PASSWORD` you set.
 
-To put the Machine closer to Jourdanton, change `primary_region` to `dfw` and create the volume in `dfw` as well. Dallas can cost more than Ashburn.
+If a deploy dies with an out-of-memory error, change `memory` in `fly.toml` from `512mb` to `1gb` and deploy again. That Machine is $6.70 per 30 days in Ashburn instead of $3.69. Dallas can bill a bit more than the Ashburn list price. A measured production process sat near 130 MB before the first request, so 512 MB is the size in the config.
 
 ### Docker on your own machine
 
